@@ -2,6 +2,7 @@ import torch
 import torchvision.transforms as T
 from perception.model_loader import loadModel
 import yaml
+import numpy as np
 
 class NeedleDetector:
     '''
@@ -28,30 +29,60 @@ class NeedleDetector:
             T.ToTensor()
         ])
         '''
+        #We only needed to print that the NeedleDetector has been 
+        #initialized when init is called
+        print("NeedleDetector initialized")
 
-    def detect(self, frame):
-
-        return []
+    def detect(self, rgbAndMask):
 
         '''
-        Runs inference on a single RGB frame
-        '''
-
-        image = self.transform(frame).to(self.device)
-
-        with torch.no_grad():
-            outputs = self.model([image])[0]
+        Input: rgb and segmentation mask
         
-        #Parse the results
+        output: detections
+        '''
+
+        #Unpack the rgb and mask tuple
+        rgb, mask = rgbAndMask
+
+        #Set of detections
         detections = []
-        for box, score, label in zip(outputs["boxes"], outputs["scores"], outputs["labels"]):
-            if score > 0.7:
-                detections.append(
-                    {
-                        "box": box.tolist(),
-                        "score": float(score),
-                        "label": int(label)
-                    }
-                )
+
+        #Find all unique object IDs in the segmentation mask
+        uniqueIDs = set(mask.flatten())
+        
+        #Remove 0, which is "background"
+        if 0 in uniqueIDs:
+            uniqueIDs.remove(0)
+
+        #If the only objects in the scene are needles, each 
+        #unique ID = one needle
+        for uniqueID in uniqueIDs:
+
+            #Find (y, x) coordinates of every pixel representing this
+            #object
+            ys, xs = np.where(mask == uniqueID)
+
+            #If the object isn't visible, skip it
+            if len(xs) == 0:
+                continue
+
+            #Create a bounding box
+            #left = min(x)
+            #right = max(x)
+            #top = min(y)
+            #bottom = max(y)
+
+            left, right = xs.min(), xs.max()
+            top, bottom = ys.min(), ys.max()
+
+            #Save the detection
+            detections.append({
+                "id" : int(uniqueID),
+                "box": [int(left), int(top), int(right), int(bottom)],
+                #1.0 is perfect confidence
+                #we can say that we have perfect confidence because 
+                #segmentation is ground truth
+                "score": 1.0
+            })
 
         return detections
