@@ -1,0 +1,15 @@
+#This file contains the packages that are required for this
+#project
+
+#Physics engine
+pybullet
+#Image and array processing
+numpy
+opencv-python
+#Machine learning model (Faster R-CNN / TorchVision)
+torch
+torchvision
+#YAML config loading
+pyyaml
+#Optional debugging / plotting utilities
+matplotlib
