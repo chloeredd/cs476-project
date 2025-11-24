@@ -1,34 +1,27 @@
 import pybullet as p
 
-class Needle:
+def dropMarker(position):
     '''
-    This class represents a needle-like object in the simulation world
+    Drop a marker in the world
     '''
 
-    def __init__(self, position):
+    visual = p.createVisualShape(
+        p.GEOM_BOX, 
+        halfExtents = [0.02, 0.02, 0.005],
+        #Have the marker be bright red so that it's easily visible
+        rgbaColor = [1, 0, 0, 1]
+    )
 
-        #Visual shape: yellow cylinder
-        visual = p.createVisualShape(
-            #It's a cylinder
-            p.GEOM_CYLINDER,
-            radius = 0.004,
-            length = 0.1,
-            #It has a yellow color
-            rgbaColor = [1, 1, 0, 1]
-        )
-        
-        #Collision shape is the same as the visual shape
-        collision = p.createCollisionShape(
-            p.GEOM_CYLINDER,
-            radius = 0.004,
-            height = 0.1
-        )
+    collision = p.createCollisionShape(
+        p.GEOM_BOX,
+        halfExtents = [0.02, 0.02, 0.005]
+    )
 
-        #Create the object in simulation
-        self.body = p.createMultiBody(
-            baseMass = 0.01,
-            baseCollisionShapeIndex = collision,
-            baseVisualShapeIndex = visual,
-            basePosition = position
-        )
+    p.createMultiBody(
+        baseMass = 0.001,
+        baseVisualShapeIndex = visual, 
+        baseCollisionShapeIndex = collision,
+        basePosition = position
+    )
 
+    print(f"Dropped marker at {position}")

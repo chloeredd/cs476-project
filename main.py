@@ -1,6 +1,7 @@
 from simulation.environment import SimulationEnvironment
 from perception.detector import NeedleDetector
 import time
+import pybullet as p
 
 def main():
     
@@ -9,57 +10,50 @@ def main():
     environment = SimulationEnvironment()
 
     
-    #Load the ML model (Faster R-CNN) if it exists
+    #Initialize detector with syringe body IDs
     try:
-        detector = NeedleDetector()
+        detector = NeedleDetector([s.body for s in environment.syringes])
     #Model cannot be found. Disable perception for now
     except FileNotFoundError:
         detector = None
 
     try:
-    
 
-        #Main loop
-        
-        '''
-        while True:
+        while True: 
 
-            #Capture image from drone's camera
-            frame = environment.camera.getFrame()
+            #Move drone slightly forward each step
+            position = environment.drone.getPosition()
+            #Slightly move along the x-axis
+            environment.drone.bodyPosition = [position[0] + 0.01, position[1], position[2]]
+            p.resetBasePositionAndOrientation(environment.drone.body, environment.drone.bodyPosition, [0, 0, 0, 1])
 
-            #Run object detection
-            detections = detector.detect(frame) if detector else []
+            #Get the RGB camera image and segmentation mask (perfect
+            #object ID mask from PyBullet)
 
-            #Needles have been detected
+            rgbFrame, segMask = environment.camera.getFrame()
+
+            #Detector works on the (rgb, mask) tuple
+            detections = detector.detect((rgbFrame, segMask))
+
+            #Print detections if any are found
             if detections:
-                print(f"Found {len(detections)} potential needles")
-            
-                #Drop marker
+                print(f"Detected {len(detections)} syringes")
+
+                #Print bounding boxes and object IDs
+                for detection in detections:
+                    print(f"Needle ID {detection['id']} at box {detection['box']}")
+
+                #Drop a marker below the drone
+                #This simulates a marking action
                 environment.drone.dropMarker()
-            
-            #Advance the physics simulation 
+
+            #Advance to the next step
             environment.step()
 
-            #Sleep for a short amount of time
-            time.sleep(environment.time_step)
-        '''
-
-        for step in range(10):
-            frame = environment.camera.getFrame()
-
-            if detector:
-                detections = detector.detect(frame)
-            else:
-                detections = [{}]
-
-            if detections:
-                environment.drone.dropMarker()
-                print(f"Step {step}: Marker dropped at drone position")
-
-            environment.step()
+            #sleep for a short period of time
             time.sleep(environment.time_step)
 
-        print("Test loop completed. Shutting down simulation")
+        print("All syringes have been visited. Shutting down the simulation")
 
 
     #End the simulation if the user uses ctrl+C
