@@ -33,12 +33,15 @@ class Camera:
         projection = p.computeProjectionMatrixFOV(self.fov, 1.0, self.near, self.far)
 
         #capture an image from a virtual camera in the simulator
+        #seg, a segmentation mask, is a pixel-level map in computer
+        #vision that identifies and labels specific regions or objects
+        #within an image
         _, _, rgb, _, seg = p.getCameraImage(
             width = self.w,
             height = self.h,
             viewMatrix = view,
             projectionMatrix = projection,
-            renderer = p.ER_BULLET_HARDWARE_OPENGL
+            renderer = p.ER_TINY_RENDERER
         )
 
         return np.array(rgb), np.array(seg)

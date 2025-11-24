@@ -10,7 +10,7 @@ class NeedleDetector:
     Given a camera frame, returns bouding boxes for objects of interest
     '''
 
-    def __init__(self):
+    def __init__(self, syringeIDs):
         '''
         #Open the yaml file
         with open("configs/simulation_config.yaml") as f:
@@ -29,9 +29,8 @@ class NeedleDetector:
             T.ToTensor()
         ])
         '''
-        #We only needed to print that the NeedleDetector has been 
-        #initialized when init is called
-        print("NeedleDetector initialized")
+        self.syringeIDs = set(syringeIDs)
+        print("NeedleDetector initialized with syringe IDs:", self.syringeIDs)
 
     def detect(self, rgbAndMask):
 
@@ -53,6 +52,9 @@ class NeedleDetector:
         #Remove 0, which is "background"
         if 0 in uniqueIDs:
             uniqueIDs.remove(0)
+
+        #Only keep the IDs that correspond to syringes
+        uniqueIDs = uniqueIDs.intersection(self.syringeIDs)
 
         #If the only objects in the scene are needles, each 
         #unique ID = one needle

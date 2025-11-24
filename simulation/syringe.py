@@ -1,6 +1,7 @@
 import pybullet as p
 
-class Needle:
+
+class Syringe:
     '''
     This class represents a needle-like object in the simulation world
     '''
@@ -31,4 +32,3 @@ class Needle:
             baseVisualShapeIndex = visual,
             basePosition = position
         )
-

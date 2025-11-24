@@ -1,43 +1,168 @@
-import pybullet as p
-import os
+<?xml version="1.0"?>
+<!-- citation: https://chatgpt.com/share/69225b4b-9c74-8001-9a1d-5c5687b5f0d7 -->
+<robot name="simple_drone" xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor">
 
-class Drone:
-    '''
-    This class provides:
-    Initialization
-    Position retrieval 
-    Custom behaviors (marker dropping, movement commands, etc.)
-    '''
+  <!-- Base link -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia 
+        ixx="0.02" ixy="0.0" ixz="0.0"
+        iyy="0.02" iyz="0.0"
+        izz="0.04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.05" radius="0.15"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.05" radius="0.15"/>
+      </geometry>
+    </collision>
+  </link>
 
-    def __init__(self, startPos = [0, 0, 1]):
-        #Path to the drone.urdf file
-        #simulation and assets are on the same "level" as each other 
-        #in the project hierarchy, so use os.path.join to create
-        #a path to the .urdf file
-        urdfPath = os.path.join(os.path.dirname(__file__), "..", "assets", "urdf", "drone.urdf")
-        urdfPath = os.path.abspath(urdfPath)
+  <!-- Arms and rotors -->
+  <link name="arm_front">
+    <visual>
+      <origin xyz="0.15 0 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.01"/>
+      </geometry>
+    </visual>
+  </link>
 
-        #Use a simple cube if the user doesn't have a drone URDF yet
-        if not os.path.exists(urdfPath):
-            print("Drone URDF not found. Using a simple cube instead")
-            self.body = p.loadURDF("cube.urdf", startPos)
-        else:
-            self.body = p.loadURDF(urdfPath, startPos)
+  <link name="arm_left">
+    <visual>
+      <origin xyz="0 0.15 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.01"/>
+      </geometry>
+    </visual>
+  </link>
 
-    def getPosition(self):
-        #Return the drone's (x, y, z) position
-        position, _ = p.getBasePositionAndOrientation(self.body)
-        return position
-    
-    def dropMarker(self):
-        '''
-        Drop a marker below the drone
-        The marker is created in simulation/marker.py
-        '''
-        from simulation.marker import dropMarker
-        position = self.getPosition()
-        #For the altitude of the marker have it be the drone's altitude
-        #minus 0.2
-        dropMarker([position[0], position[1], position[2] - 0.2])
-        
-        
+  <link name="arm_back">
+    <visual>
+      <origin xyz="-0.15 0 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.01"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <link name="arm_right">
+    <visual>
+      <origin xyz="0 -0.15 0"/>
+      <geometry>
+        <cylinder length="0.3" radius="0.01"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <!-- Rotors -->
+  <link name="rotor_front">
+    <visual>
+      <origin xyz="0.3 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.01"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="rotor_left">
+    <visual>
+      <origin xyz="0 0.3 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.01"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="rotor_back">
+    <visual>
+      <origin xyz="-0.3 0 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.01"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <link name="rotor_right">
+    <visual>
+      <origin xyz="0 -0.3 0"/>
+      <geometry>
+        <cylinder radius="0.05" length="0.01"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Fixed joints from base to arms -->
+  <joint name="base_to_arm_front" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_front"/>
+  </joint>
+
+  <joint name="base_to_arm_left" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_left"/>
+  </joint>
+
+  <joint name="base_to_arm_back" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_back"/>
+  </joint>
+
+  <joint name="base_to_arm_right" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_right"/>
+  </joint>
+
+  <!-- Rotors attached with continuous joints (no physical motor here, user applies torque) -->
+  <joint name="rotor_front_joint" type="continuous">
+    <parent link="arm_front"/>
+    <child link="rotor_front"/>
+    <origin xyz="0.15 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <joint name="rotor_left_joint" type="continuous">
+    <parent link="arm_left"/>
+    <child link="rotor_left"/>
+    <origin xyz="0 0.15 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <joint name="rotor_back_joint" type="continuous">
+    <parent link="arm_back"/>
+    <child link="rotor_back"/>
+    <origin xyz="-0.15 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <joint name="rotor_right_joint" type="continuous">
+    <parent link="arm_right"/>
+    <child link="rotor_right"/>
+    <origin xyz="0 -0.15 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+</robot>

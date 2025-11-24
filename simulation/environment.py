@@ -1,3 +1,4 @@
+'''
 import pybullet as p
 import pybullet_data
 import time
@@ -19,20 +20,22 @@ while(True):
 #disconnect may not be needed
 p.disconnect()
 
+'''
 
 #Edits that Seth made
 import pybullet as p
 import pybullet_data
 import yaml
 import os
+import random
 
 from simulation.drone import Drone
-from simulation.needle import Needle
+from simulation.syringe import Syringe
 from simulation.camera import Camera
 
 class SimulationEnvironment:
     
-    def __init__(self):
+    def __init__(self, numSyringes = 10, numDistractions = 10, areaSize = 2.0):
 
         #Load config (.yaml) file
         #Keeping configuration data outside of the code iself improves
@@ -66,17 +69,34 @@ class SimulationEnvironment:
 
         #Create the drone and attach a camera to it
         self.drone = Drone()
-        #self.camera = Camera(self.drone)
-        self.camera = Camera()
+        self.camera = Camera(self.drone)
 
-        #Spawn several example needles in fixed positions
-        self.needles = [
-            Needle([1, 0, 0.05]),
-            Needle([0, 2, 0.05]),
-        ]
+        self.syringes = []
+        for _ in range(numSyringes):
+            #x and y are random, but within the bounds of [-areaSize/2,
+            #areaSize/2]
+            #z will always be the same
+            x = random.uniform(-areaSize/2, areaSize/2)
+            y = random.uniform(-areaSize/2, areaSize/2)
+            #Above the plane
+            z = 0.05
+
+            self.syringes.append(Syringe([x, y, z]))
+
+        #Add distractions that the drone should ignore
+        self.distractions = []
+        
+        #The distractions will be small yellow cubes
+        for _ in range(numDistractions):
+            visual = p.createVisualShape(p.GEOM_BOX, halfExtents = [0.05, 0.05, 0.05], rgbaColor = [0, 1, 0, 1])
+            collision = p.createCollisionShape(p.GEOM_BOX, halfExtents = [0.05, 0.05, 0.05])
+            body = p.createMultiBody(baseMass = 0.01, baseVisualShapeIndex = visual, baseCollisionShapeIndex = collision, 
+                                     basePosition = [random.uniform(-areaSize/2, areaSize/2), random.uniform(-areaSize/2, areaSize/2), 
+                                                     0.05])
+            self.distractions.append(body)
 
         #The simulation has been initialized
-        print("Simulation initialized")
+        print("Simulation initialized with random syringe positions")
 
     def step(self):
         #Advance the physics engine by one step
