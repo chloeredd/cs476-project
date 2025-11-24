@@ -3,6 +3,7 @@ import torchvision.transforms as T
 from perception.model_loader import loadModel
 import yaml
 import numpy as np
+import os
 
 class NeedleDetector:
     '''
@@ -30,19 +31,47 @@ class NeedleDetector:
         ])
         '''
         self.syringeIDs = set(syringeIDs)
-        print("NeedleDetector initialized with syringe IDs:", self.syringeIDs)
+
+        #Load yaml configuration
+        with open("configs/simulation_config.yaml") as f:
+            config = yaml.safe_load(f)
+
+        modelPath = config["model"]["detector_path"]
+
+        #Set device (GPU is preferred)
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        #Try loading Faster R-CNN
+        try:
+            if modelPath and os.path.exists(modelPath):
+                self.model = loadModel(modelPath, self.device)
+                self.useModel = True
+                print(f"Faster R-CNN loaded on {self.device}")
+            else:
+                raise FileNotFoundError
+            
+        except:
+            print("Faster R-CNN not found. Using segmentation-mask instead")
+            self.model = None
+            self.useModel = False
+             
+        self.transform = T.ToTensor()
+
 
     def detect(self, rgbAndMask):
-
-        '''
-        Input: rgb and segmentation mask
-        
-        output: detections
-        '''
 
         #Unpack the rgb and mask tuple
         rgb, mask = rgbAndMask
 
+        #Case 1: using Faster R-CNN
+        if self.useModel:
+            inputTensor = self.transform(rgb).to(self.device)
+            with torch.no_grad():
+                outputs = self.model([inputTensor])
+            return outputs[0]
+
+        #Case 2: using segmentation mask
+        
         #Set of detections
         detections = []
 
