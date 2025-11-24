@@ -1,7 +1,9 @@
 from simulation.environment import SimulationEnvironment
 from perception.detector import NeedleDetector
+from simulation.navigation import SLAMNavigator
 import time
 import pybullet as p
+import numpy as np
 
 def main():
     
@@ -17,18 +19,14 @@ def main():
     except FileNotFoundError:
         detector = None
 
+    navigator = SLAMNavigator(environment.drone)
+
     try:
 
         while True: 
 
-            pose = environment.slam.processFrame(rgbFrame)
-            if pose is not None:
-                print()
-            #Move drone slightly forward each step
-            position = environment.drone.getPosition()
-            #Slightly move along the x-axis
-            environment.drone.bodyPosition = [position[0] + 0.01, position[1], position[2]]
-            p.resetBasePositionAndOrientation(environment.drone.body, environment.drone.bodyPosition, [0, 0, 0, 1])
+            #Update drone pose
+            navigator.updatePose()
 
             #Get the RGB camera image and segmentation mask (perfect
             #object ID mask from PyBullet)
@@ -44,11 +42,35 @@ def main():
 
                 #Print bounding boxes and object IDs
                 for detection in detections:
+
+                    syringeID = detection["id"]
+
+                    #Convert bounding box center to world coordinates
+                    syringeBody = next((s for s in environment.syringes if s.body == syringeID), None)
+
+                    if syringeBody:
+                        position = p.getBasePositionAndOrientation(syringeBody)[0]
+                        navigator.addSyringeTarget(position, syringeID)
+
                     print(f"Needle ID {detection['id']} at box {detection['box']}")
 
                 #Drop a marker below the drone
                 #This simulates a marking action
                 environment.drone.dropMarker()
+
+            
+            #Move toward the next target
+            targetInfo = navigator.getNextTarget()
+            if targetInfo:
+
+                targetPosition, syringeID = targetInfo 
+                #Move drone to the syringe
+                p.resetBasePositionAndOrientation(environment.drone.body, targetPosition, [0, 0, 0, 1])
+
+                #Drop marker
+                environment.drone.dropMarker()
+                navigator.markVisited(syringeID)
+
 
             #Advance to the next step
             environment.step()

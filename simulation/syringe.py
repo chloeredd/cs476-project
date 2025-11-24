@@ -32,3 +32,8 @@ class Syringe:
             baseVisualShapeIndex = visual,
             basePosition = position
         )
+
+    def getPosition(self):
+        #Returns the current (x, y, z) position
+        position, _ = p.getBasePositionAndOrientation(self.body)
+        return position

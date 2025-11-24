@@ -14,4 +14,4 @@ pyyaml
 #Optional debugging / plotting utilities
 matplotlib
 #For SLAM
-yag-slam
+open3d

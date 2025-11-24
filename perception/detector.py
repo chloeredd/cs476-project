@@ -65,10 +65,17 @@ class NeedleDetector:
 
         #Case 1: using Faster R-CNN
         if self.useModel:
-            inputTensor = self.transform(rgb).to(self.device)
+            inputTensor = self.transform(rgb).unsqueeze(0).to(self.device)
             with torch.no_grad():
                 outputs = self.model([inputTensor])
-            return outputs[0]
+
+            detections = []
+            for i in range(len(outputs[0]['boxes'])):
+                score = outputs[0]['scores'][i].item()
+                if score > 0.5:
+                    box = outputs[0]['boxes'][i].detach().cpu().numpy().astype(int).tolist()
+                    detections.append({"id": i, "box": box, "score": score})
+            return detections
 
         #Case 2: using segmentation mask
         
@@ -82,16 +89,20 @@ class NeedleDetector:
         if 0 in uniqueIDs:
             uniqueIDs.remove(0)
 
+        valid_objects = []
+
         #Only keep the IDs that correspond to syringes
-        uniqueIDs = uniqueIDs.intersection(self.syringeIDs)
+        #uniqueIDs = uniqueIDs.intersection(self.syringeIDs)
+
+        validIDs = [obj for obj in uniqueIDs if obj in self.syringeIDs]
 
         #If the only objects in the scene are needles, each 
         #unique ID = one needle
-        for uniqueID in uniqueIDs:
+        for objID in validIDs:
 
             #Find (y, x) coordinates of every pixel representing this
             #object
-            ys, xs = np.where(mask == uniqueID)
+            ys, xs = np.where(mask == objID)
 
             #If the object isn't visible, skip it
             if len(xs) == 0:
@@ -108,7 +119,7 @@ class NeedleDetector:
 
             #Save the detection
             detections.append({
-                "id" : int(uniqueID),
+                "id" : int(objID),
                 "box": [int(left), int(top), int(right), int(bottom)],
                 #1.0 is perfect confidence
                 #we can say that we have perfect confidence because 
