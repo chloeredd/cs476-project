@@ -10,7 +10,11 @@ def loadModel(path, device="cpu"):
     print(f"Loading model from {path}")
 
     #MapLocation lets model load onto CPU even if trained on GPU
-    model = torch.load(path, mapLocation = device)
+    model = torch.load(path, map_location = device)
+    model.to(device)
     model.eval()
 
+    print(f"Model loaded to device: {device}")
+
     return model
+
