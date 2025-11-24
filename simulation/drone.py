@@ -1,5 +1,6 @@
 import pybullet as p
 import os
+import numpy as np
 
 class Drone:
     '''
@@ -40,4 +41,32 @@ class Drone:
         #minus 0.2
         dropMarker([position[0], position[1], position[2] - 0.2])
         
+    def moveToward(self, target, speed = 0.5):
+        '''
+        Move the drone towards the target
+        '''    
+
+        currentPosition, _ = p.getBasePositionAndOrientation(self.body)
+        currentPosition = np.array(currentPosition, dtype = float)
+        target = np.array(target, dtype = float)
+
+        direction = target - currentPosition
+        distance = np.linalg.norm(direction)
+
+        #If we're close enough to consider having arrived at the 
+        #syringe
+        if distance < 0.05:
+            return True
         
+        #Normalize direction
+        direction /= distance
+
+        #Step toward target
+        step = direction * speed * 0.02
+
+        newPosition = currentPosition + step
+
+        p.resetBasePositionAndOrientation(self.body, newPosition, [0, 0, 0, 1])
+
+        #Haven't arrived yet
+        return False

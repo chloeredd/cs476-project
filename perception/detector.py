@@ -5,6 +5,8 @@ import yaml
 import numpy as np
 import os
 
+SYRINGE_CLASS_ID = 1
+
 class NeedleDetector:
     '''
     Wraps a Faster R-CNN style model.
@@ -44,7 +46,8 @@ class NeedleDetector:
         #Try loading Faster R-CNN
         try:
             if modelPath and os.path.exists(modelPath):
-                self.model = loadModel(modelPath, self.device)
+                self.model = loadModel(modelPath, self.device).to(self.device)
+                self.model.eval()
                 self.useModel = True
                 print(f"Faster R-CNN loaded on {self.device}")
             else:
@@ -65,16 +68,55 @@ class NeedleDetector:
 
         #Case 1: using Faster R-CNN
         if self.useModel:
-            inputTensor = self.transform(rgb).unsqueeze(0).to(self.device)
+            inputTensor = self.transform(rgb).to(self.device)
             with torch.no_grad():
-                outputs = self.model([inputTensor])
+                output = self.model([inputTensor])[0]
 
             detections = []
-            for i in range(len(outputs[0]['boxes'])):
-                score = outputs[0]['scores'][i].item()
-                if score > 0.5:
-                    box = outputs[0]['boxes'][i].detach().cpu().numpy().astype(int).tolist()
-                    detections.append({"id": i, "box": box, "score": score})
+            
+            for box, label, score in zip(output['boxes'], output['labels'], output['scores']):
+                
+                if score < 0.5:
+                    continue
+
+                #Ignore distractions
+                if label.item() != SYRINGE_CLASS_ID:
+                    continue
+
+                #Convert tensor box to Python list
+                x1, y1, x2, y2 = box.int().tolist()
+
+                #Find the nearest PyBullet object by using 
+                #the segmentation mask
+                crop = mask[y1:y2, x1:x2]
+
+                if crop.size == 0:
+                    continue
+
+                #Count object IDs inside bounding box
+                unique, counts = np.unique(crop, return_counts = True)
+                idCounts = dict(zip(unique, counts))
+
+                #Remove background ID 0
+                if 0 in idCounts:
+                    del idCounts[0]
+
+                if not idCounts:
+                    continue
+
+                #The PyBullet object ID with the most pixels
+                pybulletID = max(idCounts, key = idCounts.get)
+
+                #Ignore distractor objects (only mark syringes)
+                if pybulletID not in self.syringeIDs:
+                    continue
+
+                detections.append({
+                    "id": int(pybulletID),
+                    "box": [x1, y1, x2, y2],
+                    "score": float(score),
+                })
+
             return detections
 
         #Case 2: using segmentation mask

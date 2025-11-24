@@ -37,3 +37,8 @@ class SLAMNavigator:
 
         self.pose[:3, 3] = self.drone.getPosition()
         return self.pose
+    
+    def onArrivedAtTarget(self):
+        #Drone has arrived at a waypoint
+        if self.waypoints:
+            self.waypoints.pop(0)

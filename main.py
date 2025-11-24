@@ -46,17 +46,13 @@ def main():
                     syringeID = detection["id"]
 
                     #Convert bounding box center to world coordinates
-                    syringeBody = next((s for s in environment.syringes if s.body == syringeID), None)
+                    syringeObj = next((s for s in environment.syringes if s.body == syringeID), None)
 
-                    if syringeBody:
-                        position = p.getBasePositionAndOrientation(syringeBody)[0]
+                    if syringeObj:
+                        position = p.getBasePositionAndOrientation(syringeObj.body)[0]
                         navigator.addSyringeTarget(position, syringeID)
 
                     print(f"Needle ID {detection['id']} at box {detection['box']}")
-
-                #Drop a marker below the drone
-                #This simulates a marking action
-                environment.drone.dropMarker()
 
             
             #Move toward the next target
@@ -64,12 +60,21 @@ def main():
             if targetInfo:
 
                 targetPosition, syringeID = targetInfo 
+
+                arrived = environment.drone.moveToward(targetPosition)
+
+                #If the drone reached this waypoint, move to the next
+                #one 
+                if arrived:
+                    #Drop marker
+                    environment.drone.dropMarker()
+                    navigator.markVisited(syringeID)
+                    navigator.onArrivedAtTarget()
+
+                '''
                 #Move drone to the syringe
                 p.resetBasePositionAndOrientation(environment.drone.body, targetPosition, [0, 0, 0, 1])
-
-                #Drop marker
-                environment.drone.dropMarker()
-                navigator.markVisited(syringeID)
+                '''
 
 
             #Advance to the next step
