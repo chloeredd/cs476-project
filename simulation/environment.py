@@ -32,6 +32,7 @@ import random
 from simulation.drone import Drone
 from simulation.syringe import Syringe
 from simulation.camera import Camera
+from yag_slam import MonocularSLAM
 
 class SimulationEnvironment:
     

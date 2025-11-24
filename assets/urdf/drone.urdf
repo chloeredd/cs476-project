@@ -15,7 +15,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <cylinder length="0.05" radius="0.15"/>
+        <mesh filename="package://assets/models/drone.obj"/>
       </geometry>
       <material name="gray">
         <color rgba="0.5 0.5 0.5 1"/>

@@ -21,6 +21,9 @@ def main():
 
         while True: 
 
+            pose = environment.slam.processFrame(rgbFrame)
+            if pose is not None:
+                print()
             #Move drone slightly forward each step
             position = environment.drone.getPosition()
             #Slightly move along the x-axis
