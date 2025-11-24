@@ -28,5 +28,5 @@ camera:
   far: 10.0
 
 model:
-  #detector_path: "assets/models/faster_rcnn_needle.pth"
-  detector_path: ""
+  detector_path: "assets/models/faster_rcnn_syringe.pth"
+
