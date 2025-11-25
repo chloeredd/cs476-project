@@ -1,54 +1,55 @@
-import orbslam2
-import numpy as np 
-import cv2
-import os 
+import pybullet as p
+import numpy as np
 
-class SLAMManager:
+class slamManager:
+    def __init__(self, drone_id, camera_width=640, camera_height=480, area_size=2.0):
+        self.drone_id = drone_id        # integer PyBullet body ID
+        self.img_width = camera_width
+        self.img_height = camera_height
+        self.area_size = area_size
 
-    '''
-    Wrapper around ORB-SLAM2.
-    It receives frames from the simulation camera
-    and updates drone pose.
-    '''
+        # Camera parameters
+        self.fov = 60                    # degrees
+        self.aspect = camera_width / camera_height
+        self.near = 0.01
+        self.far = 10.0
 
-    def __init__(self):
+    def get_camera_frame(self):
+        # Get drone position and orientation
+        pos, ori = p.getBasePositionAndOrientation(self.drone_id)
+        rot_matrix = p.getMatrixFromQuaternion(ori)
+        # Camera looks straight down
+        cam_eye = pos
+        cam_target = [pos[0], pos[1], pos[2] - 1.0]
+        cam_up = [0, 1, 0]
+        view_matrix = p.computeViewMatrix(cam_eye, cam_target, cam_up)
+        proj_matrix = p.computeProjectionMatrixFOV(self.fov, self.aspect, self.near, self.far)
 
-        #Path to ORB-SLAM2 vocab file
-        vocab = "assets/slam/ORBvoc.txt"
-        settings = "assets/slam/camera.yaml" 
-
-        #If files don't exist, create placeholders
-        #so ORB-SLAM2 still loads
-        if not os.path.exists(vocab):
-            os.makedirs(os.path.dirname(vocab), exist_ok = True)
-            open(vocab, "w").close()
-        
-        if not os.path.exists(settings):
-            os.makedirs(os.path.dirname(settings), exist_ok = True)
-            with open(settings, "w") as f:
-                f.write("%YAML:1.0\n")
-
-        #Initialize SLAM system 
-        self.slam = orbslam2.System(
-            vocab, 
-            settings, 
-            orbslam2.Sensor.MONOCULAR
+        width, height, rgb_img, depth_img, seg_img = p.getCameraImage(
+            width=self.img_width,
+            height=self.img_height,
+            viewMatrix=view_matrix,
+            projectionMatrix=proj_matrix,
         )
+        return np.array(rgb_img)[:, :, :3]  # HxWx3
 
-        self.slam.initialize()
-        print("SLAM initialized")
+    def convert_box_to_world(self, box):
+        """
+        Convert bounding box (xmin, ymin, xmax, ymax) in image to world coordinates
+        assuming the camera points straight down.
+        """
+        x_min, y_min, x_max, y_max = box
+        x_center = (x_min + x_max) / 2.0
+        y_center = (y_min + y_max) / 2.0
 
-    def processFrame(self, frame):
+        world_x = (x_center / self.img_width - 0.5) * self.area_size
+        world_y = (y_center / self.img_height - 0.5) * self.area_size
+        world_z = 0.05  # approximate syringe height
 
-        '''
-        Feed a frame to SLAM. ORB-SLAM2 
-        expects grayscale images
-        '''
+        return world_x, world_y, world_z
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        pose = self.slam.track_monocular(gray, 0.0)
-        return pose 
-
-    def shutdown(self):
-        self.slam.shutdown()
-        
+    def move_to(self, x, y, z):
+        """
+        Simple movement: set drone position directly. In real sim, use PID/velocity.
+        """
+        p.resetBasePositionAndOrientation(self.drone_id, [x, y, z], [0, 0, 0, 1])

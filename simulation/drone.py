@@ -1,72 +1,13 @@
 import pybullet as p
-import os
-import numpy as np
+import pybullet_data
 
 class Drone:
-    '''
-    This class provides:
-    Initialization
-    Position retrieval 
-    Custom behaviors (marker dropping, movement commands, etc.)
-    '''
+    def __init__(self, start_pos=[0, 0, 1], start_ori=[0, 0, 0, 1]):
+        """
+        Loads the quadrotor URDF and stores its ID.
+        """
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+        self.drone_id = p.loadURDF("simulation/quadrotor.urdf", start_pos, start_ori)
 
-    def __init__(self, startPos = [0, 0, 1]):
-        #Path to the drone.urdf file
-        #simulation and assets are on the same "level" as each other 
-        #in the project hierarchy, so use os.path.join to create
-        #a path to the .urdf file
-        urdfPath = os.path.join(os.path.dirname(__file__), "..", "assets", "urdf", "drone.urdf")
-        urdfPath = os.path.abspath(urdfPath)
-
-        #Use a simple cube if the user doesn't have a drone URDF yet
-        if not os.path.exists(urdfPath):
-            print("Drone URDF not found. Using a simple cube instead")
-            self.body = p.loadURDF("cube.urdf", startPos)
-        else:
-            self.body = p.loadURDF(urdfPath, startPos)
-
-    def getPosition(self):
-        #Return the drone's (x, y, z) position
-        position, _ = p.getBasePositionAndOrientation(self.body)
-        return position
-    
-    def dropMarker(self):
-        '''
-        Drop a marker below the drone
-        The marker is created in simulation/marker.py
-        '''
-        from simulation.marker import dropMarker
-        position = self.getPosition()
-        #For the altitude of the marker have it be the drone's altitude
-        #minus 0.2
-        dropMarker([position[0], position[1], position[2] - 0.2])
-        
-    def moveToward(self, target, speed = 0.5):
-        '''
-        Move the drone towards the target
-        '''    
-
-        currentPosition, _ = p.getBasePositionAndOrientation(self.body)
-        currentPosition = np.array(currentPosition, dtype = float)
-        target = np.array(target, dtype = float)
-
-        direction = target - currentPosition
-        distance = np.linalg.norm(direction)
-
-        #If we're close enough to consider having arrived at the 
-        #syringe
-        if distance < 0.05:
-            return True
-        
-        #Normalize direction
-        direction /= distance
-
-        #Step toward target
-        step = direction * speed * 0.02
-
-        newPosition = currentPosition + step
-
-        p.resetBasePositionAndOrientation(self.body, newPosition, [0, 0, 0, 1])
-
-        #Haven't arrived yet
-        return False
+    def get_id(self):
+        return self.drone_id

@@ -1,20 +1,12 @@
 import torch
 
 def loadModel(path, device="cpu"):
-    '''
-    Load a PyTorch model from disk.
-    This project separates loading from inference for the sake of
-    organization
-    '''
-
-    print(f"Loading model from {path}")
-
-    #MapLocation lets model load onto CPU even if trained on GPU
-    model = torch.load(path, map_location = device)
+    """
+    Load a PyTorch Faster R-CNN model from disk.
+    """
+    print(f"[model_loader] Loading model from {path}")
+    model = torch.load(path, map_location=device)
     model.to(device)
     model.eval()
-
-    print(f"Model loaded to device: {device}")
-
+    print(f"[model_loader] Model loaded to device: {device}")
     return model
-

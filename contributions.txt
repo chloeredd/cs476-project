@@ -1,0 +1,15 @@
+This file mentions the contributions made by every group member. 
+
+Chloe: 
+Came up with the idea for the project.
+Helped work on various files during LiveShare sessions (collaborating 
+on the project synchronously).
+Worked on the entirety of the presentation slides.
+
+Seth:
+Set up the structure of the project directory.
+Worked on other files during LiveShare sessions.
+Specifically worked on getting the GPU-based computer vision to work
+properly. 
+Asked ChatGPT for help with generating and debugging code that would sufficiently 
+meet the requirements. 

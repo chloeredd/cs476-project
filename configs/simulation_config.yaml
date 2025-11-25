@@ -1,32 +1,14 @@
-#Central configuration file that stores adjustable parameters for:
-#The simulation
-#The camera
-#The machine learning model
-
-#This lets us modify parameters quickly without having to go into
-#the individual .py files
-#For example, this lets us easily change the value of the time step
-#if we need to
-
-
 simulation:
-  #gravity of the Earth
   gravity: -9.8
-  #Physics tick speed. This is a good default for drones
   time_step: 0.004
-  #Keep track of whether or not we want to use the PyBullet GUI
   gui: true
 
 camera:
-  #We want the input to be a square (i.e., the width and height are the
-  #same)
   width: 640
   height: 640
-  #Field of View for downward scanning
   fov: 80
   near: 0.01
   far: 10.0
 
 model:
-  detector_path: "assets/models/faster_rcnn_syringe.pth"
-
+  detector_path: "faster_rcnn_syringe.pth"

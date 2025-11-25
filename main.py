@@ -1,98 +1,49 @@
-from simulation.environment import SimulationEnvironment
-from perception.detector import NeedleDetector
-from simulation.navigation import SLAMNavigator
-import time
 import pybullet as p
-import numpy as np
+import time
+from simulation.environment import SimulationEnvironment
+from simulation.slamManager import slamManager
+from perception.detector import NeedleDetector
+from simulation.marker import drop_marker
 
 def main():
-    
-    #Create the simulation world (drone, needles, camera, physics, 
-    #etc.)
-    environment = SimulationEnvironment()
+    print("[main] Starting simulation")
 
-    
-    #Initialize detector with syringe body IDs
-    try:
-        detector = NeedleDetector([s.body for s in environment.syringes])
-    #Model cannot be found. Disable perception for now
-    except FileNotFoundError:
-        detector = None
+    # Initialize full environment (drone, syringes, distractions)
+    env = SimulationEnvironment()
+    drone_id = env.drone.drone_id  # assume Drone class has drone_id attribute
+    slam = slamManager(drone_id)
 
-    navigator = SLAMNavigator(environment.drone)
+    # Load detector
+    cfg_detector_path = "faster_rcnn_syringe.pth"
+    print(f"[main] LOADING DETECTOR FROM: {cfg_detector_path}")
+    detector = NeedleDetector(cfg_detector_path)
+    print("[main] Entering main loop. Press Ctrl+C to stop early.")
 
     try:
+        while True:
+            # 1. Get camera frame
+            rgb_image = slam.get_camera_frame()  # HxWx3 numpy array
 
-        while True: 
+            # 2. Detect syringes
+            detections = detector.detect(rgb_image)
+            print(f"[main] Detected {len(detections)} candidate(s)")
 
-            #Update drone pose
-            navigator.updatePose()
+            # 3. Move drone and drop markers
+            for box, label in detections:
+                if label == 1:  # syringe
+                    x, y, z = slam.convert_box_to_world(box)
+                    slam.move_to(x, y, z + 0.05)
+                    drop_marker(x, y, z)
 
-            #Get the RGB camera image and segmentation mask (perfect
-            #object ID mask from PyBullet)
+            # 4. Step simulation
+            env.step()
 
-            rgbFrame, segMask = environment.camera.getFrame()
-
-            #Detector works on the (rgb, mask) tuple
-            detections = detector.detect((rgbFrame, segMask))
-
-            #Print detections if any are found
-            if detections:
-                print(f"Detected {len(detections)} syringes")
-
-                #Print bounding boxes and object IDs
-                for detection in detections:
-
-                    syringeID = detection["id"]
-
-                    #Convert bounding box center to world coordinates
-                    syringeObj = next((s for s in environment.syringes if s.body == syringeID), None)
-
-                    if syringeObj:
-                        position = p.getBasePositionAndOrientation(syringeObj.body)[0]
-                        navigator.addSyringeTarget(position, syringeID)
-
-                    print(f"Needle ID {detection['id']} at box {detection['box']}")
-
-            
-            #Move toward the next target
-            targetInfo = navigator.getNextTarget()
-            if targetInfo:
-
-                targetPosition, syringeID = targetInfo 
-
-                arrived = environment.drone.moveToward(targetPosition)
-
-                #If the drone reached this waypoint, move to the next
-                #one 
-                if arrived:
-                    #Drop marker
-                    environment.drone.dropMarker()
-                    navigator.markVisited(syringeID)
-                    navigator.onArrivedAtTarget()
-
-                '''
-                #Move drone to the syringe
-                p.resetBasePositionAndOrientation(environment.drone.body, targetPosition, [0, 0, 0, 1])
-                '''
-
-
-            #Advance to the next step
-            environment.step()
-
-            #sleep for a short period of time
-            time.sleep(environment.time_step)
-
-        print("All syringes have been visited. Shutting down the simulation")
-
-
-    #End the simulation if the user uses ctrl+C
     except KeyboardInterrupt:
-        print("Shutting down simulation")
+        print("[main] Simulation stopped by user")
 
     finally:
-        environment.shutdown()
-    
+        env.shutdown()
+        print("[main] Environment shutdown complete")
 
 if __name__ == "__main__":
     main()

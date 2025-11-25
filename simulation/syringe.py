@@ -1,39 +1,31 @@
 import pybullet as p
 
-
 class Syringe:
-    '''
-    This class represents a needle-like object in the simulation world
-    '''
-
     def __init__(self, position):
-
-        #Visual shape: yellow cylinder
+        """
+        Creates a yellow cylinder to represent a syringe.
+        Returns the created body id as self.body
+        """
+        # visual
         visual = p.createVisualShape(
-            #It's a cylinder
             p.GEOM_CYLINDER,
-            radius = 0.004,
-            length = 0.1,
-            #It has a yellow color
-            rgbaColor = [1, 1, 0, 1]
+            radius=0.004,
+            length=0.1,
+            rgbaColor=[1, 1, 0, 1]
         )
-        
-        #Collision shape is the same as the visual shape
+        # collision
         collision = p.createCollisionShape(
             p.GEOM_CYLINDER,
-            radius = 0.004,
-            height = 0.1
+            radius=0.004,
+            height=0.1
         )
-
-        #Create the object in simulation
         self.body = p.createMultiBody(
-            baseMass = 0.01,
-            baseCollisionShapeIndex = collision,
-            baseVisualShapeIndex = visual,
-            basePosition = position
+            baseMass=0.01,
+            baseCollisionShapeIndex=collision,
+            baseVisualShapeIndex=visual,
+            basePosition=position
         )
 
     def getPosition(self):
-        #Returns the current (x, y, z) position
-        position, _ = p.getBasePositionAndOrientation(self.body)
-        return position
+        pos, _ = p.getBasePositionAndOrientation(self.body)
+        return pos

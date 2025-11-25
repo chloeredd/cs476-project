@@ -1,0 +1,100 @@
+<?xml version="1.0" ?>
+<robot name="simple_quadrotor">
+
+    <!-- Base link of the quadrotor -->
+    <link name="base_link">
+        <inertial>
+            <origin xyz="0 0 0" />
+            <mass value="1.0" />
+            <inertia ixx="0.01" iyy="0.01" izz="0.02" ixy="0" ixz="0" iyz="0" />
+        </inertial>
+
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <box size="0.3 0.3 0.05"/>
+            </geometry>
+            <material name="gray">
+                <color rgba="0.5 0.5 0.5 1"/>
+            </material>
+        </visual>
+
+        <collision>
+            <origin xyz="0 0 0"/>
+            <geometry>
+                <box size="0.3 0.3 0.05"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Four propeller links (no motors; visual only) -->
+    <link name="prop_front_left">
+        <visual>
+            <origin xyz="0.15 0.15 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.01"/>
+            </geometry>
+            <material name="red">
+                <color rgba="1 0 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <link name="prop_front_right">
+        <visual>
+            <origin xyz="0.15 -0.15 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.01"/>
+            </geometry>
+            <material name="green">
+                <color rgba="0 1 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <link name="prop_back_left">
+        <visual>
+            <origin xyz="-0.15 0.15 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.01"/>
+            </geometry>
+            <material name="blue">
+                <color rgba="0 0 1 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <link name="prop_back_right">
+        <visual>
+            <origin xyz="-0.15 -0.15 0"/>
+            <geometry>
+                <cylinder radius="0.05" length="0.01"/>
+            </geometry>
+            <material name="yellow">
+                <color rgba="1 1 0 1"/>
+            </material>
+        </visual>
+    </link>
+
+    <!-- Fixed joints to attach props to base -->
+    <joint name="j_front_left" type="fixed">
+        <parent link="base_link"/>
+        <child link="prop_front_left"/>
+    </joint>
+
+    <joint name="j_front_right" type="fixed">
+        <parent link="base_link"/>
+        <child link="prop_front_right"/>
+    </joint>
+
+    <joint name="j_back_left" type="fixed">
+        <parent link="base_link"/>
+        <child link="prop_back_left"/>
+    </joint>
+
+    <joint name="j_back_right" type="fixed">
+        <parent link="base_link"/>
+        <child link="prop_back_right"/>
+    </joint>
+
+</robot>
