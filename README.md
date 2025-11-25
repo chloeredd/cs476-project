@@ -8,5 +8,5 @@
 
 #run "python3 main.py"
 
-#A GUI window should pop-up!
+#A GUI window should pop up!
 
